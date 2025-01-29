@@ -31,7 +31,7 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
     FILE *file = fopen("USUARIOS.DAT", "rb");
     if (!file) {
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
         system("cls");
         printf("ARQUIVO USUARIOS.DAT INEXISTENTE!\n");
         Sleep(1000);
@@ -48,7 +48,7 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
     *usuarios = (Usuario *)malloc(*quantidade * sizeof(Usuario));
     if (*usuarios == NULL) {
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
         system("cls");
         printf("malloc devolveu NULL!\n");
         fclose(file);
@@ -103,7 +103,7 @@ int realizarLogin() {
 #endif
 
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, BACKGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    SetConsoleTextAttribute(hConsole, BACKGROUND_BLUE | BACKGROUND_GREEN | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
     system("cls");
 
     char nome[MAX_NOME], prontuario[MAX_PRONTUARIO];
@@ -126,7 +126,7 @@ int realizarLogin() {
         return -1; // Erro de leitura
     } else if (resultado == 0) {
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, BACKGROUND_RED | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+        SetConsoleTextAttribute(hConsole, BACKGROUND_RED | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
         system("cls");
         printf("USUÁRIO E/OU PRONTUÁRIO INVÁLIDO!\n");
         free(usuarios);
