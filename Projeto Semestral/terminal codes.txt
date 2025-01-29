@@ -1,0 +1,1 @@
+gcc main.c login.c userSort.c -o sistema.exe
