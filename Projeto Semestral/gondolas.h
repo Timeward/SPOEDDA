@@ -11,20 +11,32 @@ typedef struct Item {
     char descricao[100];
     float peso;
     float preco;
-    struct Item *proximo;
+    struct Item *prox;
 } Item;
 
-// Definição da estrutura da pilha (prateleira)
+// Definição da estrutura de uma prateleira (Pilha)
 typedef struct Prateleira {
+    int id;  // Identificador único da prateleira
     Item *topo;
     int quantidade;
+    struct Prateleira *prox;
 } Prateleira;
 
-// Funções para manipulação da pilha
-void inicializarPrateleira(Prateleira *p);
-int empilharItem(Prateleira *p, const char *nome, const char *descricao, float peso, float preco);
-int desempilharItem(Prateleira *p);
-void exibirPrateleira(Prateleira *p);
-void limparPrateleira(Prateleira *p);
+// Lista encadeada de prateleiras
+typedef struct {
+    Prateleira *inicio;
+    int contador;
+} ListaPrateleiras;
 
-#endif // GONDOLAS_H
+// Funções para gerenciar as prateleiras
+void inicializarLista(ListaPrateleiras *lista);
+void criarPrateleira(ListaPrateleiras *lista);
+void empilharItem(Prateleira *prateleira, const char *nome, const char *descricao, float peso, float preco);
+void desempilharItem(Prateleira *prateleira);
+void exibirPrateleiras(ListaPrateleiras *lista);
+void exibirItensPrateleira(Prateleira *prateleira);
+Prateleira* buscarPrateleira(ListaPrateleiras *lista, int id);
+void menuGondolas(ListaPrateleiras *lista);
+void limparLista(ListaPrateleiras *lista);
+
+#endif
