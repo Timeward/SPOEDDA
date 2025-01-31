@@ -3,6 +3,7 @@
 #include "login.h"
 #include "userSort.h"
 #include "usuarios.h"
+#include "gondolas.h"
 #include "locale.h"
 #include "windows.h"
 
@@ -37,6 +38,9 @@ int main(){
     // Verifica o resultado do login
     if (loginResultado == 1) {
 
+        ListaPrateleiras lista;
+        inicializarLista(&lista);
+
         int opcao;
 
         do{
@@ -67,7 +71,7 @@ int main(){
 
             switch (opcao) {
                 case 1:
-                    printf("\nOpção 1 - Abastecer Gôndolas selecionada.\n");
+                    menuGondolas(&lista);
                     break;
                 case 2:
                     printf("\nOpção 2 - Caixa/PDV selecionada.\n");
