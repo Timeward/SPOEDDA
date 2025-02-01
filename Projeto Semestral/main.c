@@ -70,9 +70,14 @@ int main(){
             getchar(); // Limpa o buffer do teclado
 
             switch (opcao) {
-                case 1:
+                case 1:{
+                    ListaPrateleiras lista;
+                    carregarLista(&lista, "gondolas.dat");
                     menuGondolas(&lista);
+                    salvarLista(&lista, "gondolas.dat");
+                    limparLista(&lista);
                     break;
+                }
                 case 2:
                     printf("\nOpção 2 - Caixa/PDV selecionada.\n");
                     break;

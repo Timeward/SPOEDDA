@@ -1,7 +1,108 @@
+//TODO: Ao ler o arquivo gondolas.dat, dados são perdidos.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "gondolas.h"
+
+void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
+    FILE *arquivo = fopen(nomeArquivo, "wb");
+    if (!arquivo) {
+        printf("Erro ao abrir arquivo para salvar os dados.\n");
+        return;
+    }
+    
+    // Primeiro, grave o número total de prateleiras
+    int totalPrateleiras = 0;
+    Prateleira *p = lista->inicio;
+    while (p) {
+        totalPrateleiras++;
+        p = p->prox;
+    }
+    fwrite(&totalPrateleiras, sizeof(int), 1, arquivo);
+    
+    // Para cada prateleira, grave os dados essenciais
+    p = lista->inicio;
+    while (p) {
+        // Grave os dados da prateleira: id e quantidade
+        fwrite(&p->id, sizeof(int), 1, arquivo);
+        fwrite(&p->quantidade, sizeof(int), 1, arquivo);
+        
+        // Para cada prateleira, grave os itens (número de itens é p->quantidade)
+        Item *it = p->topo;
+        while (it) {
+            fwrite(it->nome, sizeof(char), 50, arquivo);
+            fwrite(it->descricao, sizeof(char), 100, arquivo);
+            fwrite(&it->peso, sizeof(float), 1, arquivo);
+            fwrite(&it->preco, sizeof(float), 1, arquivo);
+            it = it->prox;
+        }
+        
+        p = p->prox;
+    }
+    
+    fclose(arquivo);
+    printf("Dados salvos com sucesso!\n");
+}
+
+void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
+        FILE *arquivo = fopen(nomeArquivo, "rb");
+    if (!arquivo) {
+        printf("Nenhum arquivo de dados encontrado. Criando uma nova lista...\n");
+        inicializarLista(lista);
+        return;
+    }
+
+    inicializarLista(lista);
+
+    int totalPrateleiras;
+    fread(&totalPrateleiras, sizeof(int), 1, arquivo);
+
+    for (int i = 0; i < totalPrateleiras; i++) {
+        // Criar nova prateleira
+        Prateleira *novaPrateleira = (Prateleira *)malloc(sizeof(Prateleira));
+        if (!novaPrateleira) {
+            printf("Erro ao alocar memória para a prateleira.\n");
+            fclose(arquivo);
+            return;
+        }
+
+        fread(&novaPrateleira->id, sizeof(int), 1, arquivo);
+        fread(&novaPrateleira->quantidade, sizeof(int), 1, arquivo);
+        novaPrateleira->topo = NULL;
+        novaPrateleira->prox = lista->inicio;
+        lista->inicio = novaPrateleira;
+
+        // Criar um array temporário para armazenar os itens
+        Item *itensTemp = (Item *)malloc(novaPrateleira->quantidade * sizeof(Item));
+        if (!itensTemp) {
+            printf("Erro ao alocar memória para itens temporários.\n");
+            fclose(arquivo);
+            return;
+        }
+
+        // Ler os itens do arquivo para o array temporário
+        fread(itensTemp, sizeof(Item), novaPrateleira->quantidade, arquivo);
+
+        // Empilhar os itens de trás para frente para manter a ordem original
+        for (int j = novaPrateleira->quantidade - 1; j >= 0; j--) {
+            Item *novoItem = (Item *)malloc(sizeof(Item));
+            if (!novoItem) {
+                printf("Erro ao alocar memória para um item.\n");
+                fclose(arquivo);
+                return;
+            }
+
+            *novoItem = itensTemp[j];  // Copia o item do array
+            novoItem->prox = novaPrateleira->topo; // Empilha corretamente
+            novaPrateleira->topo = novoItem;
+        }
+
+        free(itensTemp); // Liberar memória do array temporário
+    }
+
+    fclose(arquivo);
+    printf("Dados carregados com sucesso!\n");
+}
 
 // Inicializa a lista de prateleiras
 void inicializarLista(ListaPrateleiras *lista) {
@@ -38,7 +139,7 @@ Prateleira* buscarPrateleira(ListaPrateleiras *lista, int id) {
 }
 
 // Adiciona um item à prateleira (empilhar)
-void empilharItem(Prateleira *prateleira, const char *nome, const char *descricao, float peso, float preco) {
+void empilharItem(Prateleira *prateleira, const char *nome, const char *descricao, float peso, float preco, ListaPrateleiras *lista) {
     if (prateleira->quantidade >= 5) {
         printf("A prateleira %d está cheia!\n", prateleira->id);
         return;
@@ -59,10 +160,13 @@ void empilharItem(Prateleira *prateleira, const char *nome, const char *descrica
     prateleira->quantidade++;
 
     printf("Item '%s' adicionado à prateleira %d\n", nome, prateleira->id);
+
+    // 🚀 Aqui está a chamada correta
+    salvarLista(lista, "gondolas.dat");
 }
 
 // Remove um item da prateleira (desempilhar)
-void desempilharItem(Prateleira *prateleira) {
+void desempilharItem(Prateleira *prateleira, ListaPrateleiras *lista) {
     if (prateleira->topo == NULL) {
         printf("A prateleira %d está vazia!\n", prateleira->id);
         return;
@@ -74,10 +178,14 @@ void desempilharItem(Prateleira *prateleira) {
 
     printf("Item '%s' removido da prateleira %d\n", removido->nome, prateleira->id);
     free(removido);
+
+    // 🚀 Salva a lista após remover o item
+    salvarLista(lista, "gondolas.dat");
 }
 
 // Exibe todas as prateleiras disponíveis
 void exibirPrateleiras(ListaPrateleiras *lista) {
+        SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
     Prateleira *atual = lista->inicio;
     if (atual == NULL) {
         printf("Nenhuma prateleira cadastrada.\n");
@@ -105,6 +213,7 @@ void exibirItensPrateleira(Prateleira *prateleira) {
                atual->nome, atual->descricao, atual->peso, atual->preco);
         atual = atual->prox;
     }
+    getch();
 }
 
 // Limpa toda a memória alocada
@@ -125,6 +234,7 @@ void limparLista(ListaPrateleiras *lista) {
 
 // Menu de gerenciamento de prateleiras
 void menuGondolas(ListaPrateleiras *lista) {
+    SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
     int opcao, id;
     char nome[50], descricao[100];
     float peso, preco;
@@ -169,7 +279,7 @@ void menuGondolas(ListaPrateleiras *lista) {
                     scanf("%f", &peso);
                     printf("Preço: ");
                     scanf("%f", &preco);
-                    empilharItem(prateleira, nome, descricao, peso, preco);
+                    empilharItem(prateleira, nome, descricao, peso, preco, lista);
                 } else {
                     printf("Prateleira não encontrada!\n");
                 }
@@ -179,7 +289,11 @@ void menuGondolas(ListaPrateleiras *lista) {
                 printf("Informe o ID da prateleira: ");
                 scanf("%d", &id);
                 prateleira = buscarPrateleira(lista, id);
-                if (prateleira) desempilharItem(prateleira);
+                if (prateleira) {
+                    desempilharItem(prateleira, lista);
+                } else {
+                    printf("Prateleira não encontrada!\n");
+                }
                 break;
             case 4:
                 exibirPrateleiras(lista);

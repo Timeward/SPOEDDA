@@ -97,10 +97,10 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
 
 // Função principal de login
 int realizarLogin() {
-    setlocale(LC_ALL, "pt_BR.UTF-8");
-#ifdef _WIN32
-    SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
-#endif
+        setlocale(LC_ALL, "pt_BR.UTF-8");
+    #ifdef _WIN32
+        SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
+    #endif
 
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, BACKGROUND_BLUE | BACKGROUND_GREEN | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
