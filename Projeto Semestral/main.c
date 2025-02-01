@@ -10,7 +10,7 @@
 int main(){
     setlocale(LC_ALL, "pt_BR.UTF-8"); // Configura locale para UTF-8
     #ifdef _WIN32
-    SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
+    SetConsoleOutputCP(CP_UTF8); // Define código de página UTF-8 no Windows
     #endif
 
     // Carrega os usuários do arquivo

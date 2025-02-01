@@ -3,49 +3,49 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gondolas.h"
+#include "locale.h"
 
 void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
-    FILE *arquivo = fopen(nomeArquivo, "wb");
+    setlocale(LC_ALL, "pt_BR.UTF-8");
+    FILE *arquivo = fopen(nomeArquivo, "wb, ccs=UTF-8");
     if (!arquivo) {
         printf("Erro ao abrir arquivo para salvar os dados.\n");
         return;
     }
-    
-    // Primeiro, grave o número total de prateleiras
-    int totalPrateleiras = 0;
-    Prateleira *p = lista->inicio;
-    while (p) {
-        totalPrateleiras++;
-        p = p->prox;
-    }
-    fwrite(&totalPrateleiras, sizeof(int), 1, arquivo);
-    
-    // Para cada prateleira, grave os dados essenciais
-    p = lista->inicio;
-    while (p) {
-        // Grave os dados da prateleira: id e quantidade
-        fwrite(&p->id, sizeof(int), 1, arquivo);
-        fwrite(&p->quantidade, sizeof(int), 1, arquivo);
-        
-        // Para cada prateleira, grave os itens (número de itens é p->quantidade)
-        Item *it = p->topo;
-        while (it) {
-            fwrite(it->nome, sizeof(char), 50, arquivo);
-            fwrite(it->descricao, sizeof(char), 100, arquivo);
-            fwrite(&it->peso, sizeof(float), 1, arquivo);
-            fwrite(&it->preco, sizeof(float), 1, arquivo);
-            it = it->prox;
+
+    Prateleira *prateleiraAtual = lista->inicio;
+    while (prateleiraAtual) {
+        fwrite(&prateleiraAtual->id, sizeof(int), 1, arquivo);
+        fwrite(&prateleiraAtual->quantidade, sizeof(int), 1, arquivo);
+
+        Item *itemAtual = prateleiraAtual->topo;
+        while (itemAtual) {
+            printf("Nome antes de salvar: %s\n", itemAtual->nome);
+            for (int i = 0; i < strlen(itemAtual->nome); i++) {
+                printf("%02X ", (unsigned char)itemAtual->nome[i]);  // Mostra os valores em hexadecimal
+            }
+            printf("\n");
+            fwrite(itemAtual->nome, sizeof(char), 50, arquivo);  // Nome do item
+            fwrite(itemAtual->descricao, sizeof(char), 100, arquivo); // Descrição
+            fwrite(&itemAtual->peso, sizeof(float), 1, arquivo); // Peso
+            fwrite(&itemAtual->preco, sizeof(float), 1, arquivo); // Preço
+
+            printf("Nome salvo: %s\n", itemAtual->nome);//TESTE
+            printf("Descrição salva: %s\n", itemAtual->descricao);//TESTE
+            getch();
+
+            itemAtual = itemAtual->prox;
         }
-        
-        p = p->prox;
+
+        prateleiraAtual = prateleiraAtual->prox;
     }
-    
+
     fclose(arquivo);
     printf("Dados salvos com sucesso!\n");
 }
 
 void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
-        FILE *arquivo = fopen(nomeArquivo, "rb");
+    FILE *arquivo = fopen(nomeArquivo, "rb, ccs=UTF-8");
     if (!arquivo) {
         printf("Nenhum arquivo de dados encontrado. Criando uma nova lista...\n");
         inicializarLista(lista);
@@ -54,11 +54,7 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
 
     inicializarLista(lista);
 
-    int totalPrateleiras;
-    fread(&totalPrateleiras, sizeof(int), 1, arquivo);
-
-    for (int i = 0; i < totalPrateleiras; i++) {
-        // Criar nova prateleira
+    while (1) {
         Prateleira *novaPrateleira = (Prateleira *)malloc(sizeof(Prateleira));
         if (!novaPrateleira) {
             printf("Erro ao alocar memória para a prateleira.\n");
@@ -66,25 +62,16 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
             return;
         }
 
-        fread(&novaPrateleira->id, sizeof(int), 1, arquivo);
+        if (fread(&novaPrateleira->id, sizeof(int), 1, arquivo) != 1) {
+            free(novaPrateleira);
+            break;
+        }
         fread(&novaPrateleira->quantidade, sizeof(int), 1, arquivo);
         novaPrateleira->topo = NULL;
         novaPrateleira->prox = lista->inicio;
         lista->inicio = novaPrateleira;
 
-        // Criar um array temporário para armazenar os itens
-        Item *itensTemp = (Item *)malloc(novaPrateleira->quantidade * sizeof(Item));
-        if (!itensTemp) {
-            printf("Erro ao alocar memória para itens temporários.\n");
-            fclose(arquivo);
-            return;
-        }
-
-        // Ler os itens do arquivo para o array temporário
-        fread(itensTemp, sizeof(Item), novaPrateleira->quantidade, arquivo);
-
-        // Empilhar os itens de trás para frente para manter a ordem original
-        for (int j = novaPrateleira->quantidade - 1; j >= 0; j--) {
+        for (int i = 0; i < novaPrateleira->quantidade; i++) {
             Item *novoItem = (Item *)malloc(sizeof(Item));
             if (!novoItem) {
                 printf("Erro ao alocar memória para um item.\n");
@@ -92,12 +79,17 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
                 return;
             }
 
-            *novoItem = itensTemp[j];  // Copia o item do array
-            novoItem->prox = novaPrateleira->topo; // Empilha corretamente
+            fread(novoItem->nome, sizeof(char), 50, arquivo);
+            fread(novoItem->descricao, sizeof(char), 100, arquivo);
+            fread(&novoItem->peso, sizeof(float), 1, arquivo);
+            fread(&novoItem->preco, sizeof(float), 1, arquivo);
+
+            novoItem->nome[49] = '\0';
+            novoItem->descricao[99] = '\0';
+
+            novoItem->prox = novaPrateleira->topo;
             novaPrateleira->topo = novoItem;
         }
-
-        free(itensTemp); // Liberar memória do array temporário
     }
 
     fclose(arquivo);
@@ -212,6 +204,7 @@ void exibirItensPrateleira(Prateleira *prateleira) {
         printf("- %s | %s | Peso: %.2f kg | Preço: R$ %.2f\n",
                atual->nome, atual->descricao, atual->peso, atual->preco);
         atual = atual->prox;
+        printf("Teste de acentos: áéíóú âêô ç ãõ\n");//TESTE
     }
     getch();
 }
