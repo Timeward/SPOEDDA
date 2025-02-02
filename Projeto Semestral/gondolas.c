@@ -1,13 +1,13 @@
-//TODO: Ao ler o arquivo gondolas.dat, dados são perdidos.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "gondolas.h"
 #include "locale.h"
+#include "windows.h"
 
 void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
     setlocale(LC_ALL, "pt_BR.UTF-8");
-    FILE *arquivo = fopen(nomeArquivo, "wb, ccs=UTF-8");
+    FILE *arquivo = fopen(nomeArquivo, "wb");
     if (!arquivo) {
         printf("Erro ao abrir arquivo para salvar os dados.\n");
         return;
@@ -20,19 +20,19 @@ void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
 
         Item *itemAtual = prateleiraAtual->topo;
         while (itemAtual) {
-            printf("Nome antes de salvar: %s\n", itemAtual->nome);
-            for (int i = 0; i < strlen(itemAtual->nome); i++) {
-                printf("%02X ", (unsigned char)itemAtual->nome[i]);  // Mostra os valores em hexadecimal
-            }
+            // printf("Nome antes de salvar: %s\n", itemAtual->nome);
+            // for (int i = 0; i < strlen(itemAtual->nome); i++) {
+            //     printf("%02X ", (unsigned char)itemAtual->nome[i]);  // Mostra os valores em hexadecimal
+            // }
             printf("\n");
             fwrite(itemAtual->nome, sizeof(char), 50, arquivo);  // Nome do item
             fwrite(itemAtual->descricao, sizeof(char), 100, arquivo); // Descrição
             fwrite(&itemAtual->peso, sizeof(float), 1, arquivo); // Peso
             fwrite(&itemAtual->preco, sizeof(float), 1, arquivo); // Preço
 
-            printf("Nome salvo: %s\n", itemAtual->nome);//TESTE
-            printf("Descrição salva: %s\n", itemAtual->descricao);//TESTE
-            getch();
+            // printf("Nome salvo: %s\n", itemAtual->nome);//TESTE
+            // printf("Descrição salva: %s\n", itemAtual->descricao);//TESTE
+            // getch();
 
             itemAtual = itemAtual->prox;
         }
@@ -45,7 +45,7 @@ void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
 }
 
 void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
-    FILE *arquivo = fopen(nomeArquivo, "rb, ccs=UTF-8");
+    FILE *arquivo = fopen(nomeArquivo, "rb");
     if (!arquivo) {
         printf("Nenhum arquivo de dados encontrado. Criando uma nova lista...\n");
         inicializarLista(lista);
@@ -204,7 +204,7 @@ void exibirItensPrateleira(Prateleira *prateleira) {
         printf("- %s | %s | Peso: %.2f kg | Preço: R$ %.2f\n",
                atual->nome, atual->descricao, atual->peso, atual->preco);
         atual = atual->prox;
-        printf("Teste de acentos: áéíóú âêô ç ãõ\n");//TESTE
+        // printf("Teste de acentos: áéíóú âêô ç ãõ\n");//TESTE
     }
     getch();
 }
@@ -250,6 +250,52 @@ void menuGondolas(ListaPrateleiras *lista) {
         printf("5. Exibir itens de uma prateleira\n");
         printf("0. Voltar ao menu principal\n");
         printf("====================================\n");
+        // Verificar e exibir prateleiras vazias
+        int encontrouVazia = 0, encontrouCheia = 0;
+        Prateleira *atual = lista->inicio;
+
+        #ifdef _WIN32
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(hConsole, &csbi);
+        WORD originalAttributes = csbi.wAttributes;
+        #endif
+
+        while (atual != NULL) {
+            if (atual->quantidade == 0) {
+                if (!encontrouVazia) {
+                    #ifdef _WIN32
+                    SetConsoleTextAttribute(hConsole, (originalAttributes & 0xF0) | (FOREGROUND_RED | FOREGROUND_INTENSITY));
+                    #else
+                    printf("\033[31m"); // Vermelho para o texto
+                    #endif
+                    printf("\nAVISO: Existem prateleiras vazias!\n");
+                    encontrouVazia = 1;
+                }
+                printf(" - Prateleira ID %d está vazia!\n", atual->id);
+            } 
+            else if (atual->quantidade == 5) { // Prateleira cheia
+                if (!encontrouCheia) {
+                    #ifdef _WIN32
+                    SetConsoleTextAttribute(hConsole, (originalAttributes & 0xF0) | (FOREGROUND_BLUE | FOREGROUND_INTENSITY));
+                    #else
+                    printf("\033[34m"); // Azul para o texto
+                    #endif
+                    printf("\nAVISO: Existem prateleiras cheias!\n");
+                    encontrouCheia = 1;
+                }
+                printf(" - Prateleira ID %d está cheia!\n", atual->id);
+            }
+            atual = atual->prox;
+        }
+
+        // Resetar cor para o padrão do terminal
+        #ifdef _WIN32
+        SetConsoleTextAttribute(hConsole, originalAttributes);
+        #else
+        printf("\033[0m");
+        #endif
+        printf("====================================\n");
         printf("Escolha uma opção: ");
         scanf("%d", &opcao);
 
@@ -264,6 +310,7 @@ void menuGondolas(ListaPrateleiras *lista) {
                 prateleira = buscarPrateleira(lista, id);
                 if (prateleira) {
                     getchar();
+                    printf("Atenção: Não utilizar caractéres com acento ou cedilha.\n");
                     printf("Nome do item: ");
                     fgets(nome, sizeof(nome), stdin);
                     printf("Descrição: ");
