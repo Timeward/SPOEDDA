@@ -39,7 +39,7 @@ int main(){
     }
 
     // Realiza o login
-    int loginResultado = realizarLogin(usuarioLogado);
+    int loginResultado = realizarLogin(&usuarioLogado);
 
     // Verifica o resultado do login
     if (loginResultado == 1) {
@@ -70,7 +70,6 @@ int main(){
             printf("   3. Gerenciar Usuários\n");
             printf("   0. Sair\n");
             printf("\n   Escolha opção: ");
-            printf("Usuário logado: %s, Permissão: %s\n", usuarioLogado.nome, usuarioLogado.prontuario);//teste
 
             scanf("%d", &opcao);
             getchar(); // Limpa o buffer do teclado

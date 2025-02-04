@@ -85,7 +85,7 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
 }
 
 // Função principal de login
-int realizarLogin(Usuario usuarioLogado) {
+int realizarLogin(Usuario *usuarioLogado) {
     setlocale(LC_ALL, "pt_BR.UTF-8");
     #ifdef _WIN32
         SetConsoleOutputCP(65001);
@@ -126,14 +126,10 @@ int realizarLogin(Usuario usuarioLogado) {
         return 0;
     } else {
         // Armazena os dados do usuário logado usando o índice correto
-        strcpy(usuarioLogado.nome, usuarios[indice].nome);
-        strcpy(usuarioLogado.prontuario, usuarios[indice].prontuario);
-        printf("\n🔹 [DEBUG] Dentro de realizarLogin:\n");
-        printf("Nome: '%s'\n", usuarioLogado.nome);
-        printf("Prontuário: '%s'\n", usuarioLogado.prontuario);
+        strcpy(usuarioLogado->nome, usuarios[indice].nome);
+        strcpy(usuarioLogado->prontuario, usuarios[indice].prontuario);
         printf("Login bem-sucedido!\n");
         free(usuarios);
-        Sleep(5000);
         return 1;//DEBUG: possible issue here? maybe it's not returning the actual user? but it should be a global variable
     }
 }
