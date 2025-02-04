@@ -4,6 +4,10 @@
 #include "gondolas.h"
 #include "locale.h"
 #include "windows.h"
+#include "login.h"
+
+#define USUARIO_AUTORIZADO "placeholder1"
+#define PRONTUARIO_AUTORIZADO "placeholder2"
 
 void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
     setlocale(LC_ALL, "pt_BR.UTF-8");
@@ -245,7 +249,7 @@ void menuGondolas(ListaPrateleiras *lista) {
         printf("====================================\n");
         printf("1. Criar nova prateleira\n");
         printf("2. Incluir item em prateleira\n");
-        printf("3. Remover item de prateleira\n");
+        printf("3. Adicionar itens ao carrinho\n");
         printf("4. Listar prateleiras\n");
         printf("5. Exibir itens de uma prateleira\n");
         printf("0. Voltar ao menu principal\n");
@@ -301,29 +305,41 @@ void menuGondolas(ListaPrateleiras *lista) {
 
         switch (opcao) {
             case 1:
-                criarPrateleira(lista);
-                break;
-            case 2:
-                exibirPrateleiras(lista);
-                printf("Informe o ID da prateleira: ");
-                scanf("%d", &id);
-                prateleira = buscarPrateleira(lista, id);
-                if (prateleira) {
-                    getchar();
-                    printf("Atenção: Não utilizar caractéres com acento ou cedilha.\n");
-                    printf("Nome do item: ");
-                    fgets(nome, sizeof(nome), stdin);
-                    printf("Descrição: ");
-                    fgets(descricao, sizeof(descricao), stdin);
-                    printf("Peso: ");
-                    scanf("%f", &peso);
-                    printf("Preço: ");
-                    scanf("%f", &preco);
-                    empilharItem(prateleira, nome, descricao, peso, preco, lista);
+                if (strcmp(usuarioLogado.nome, USUARIO_AUTORIZADO) != 0 || strcmp(usuarioLogado.prontuario, PRONTUARIO_AUTORIZADO) != 0) {
+                    printf("Acesso negado! Você não tem permissão para realizar esta ação.\n");
+                    getch();
+                    break;
                 } else {
-                    printf("Prateleira não encontrada!\n");
+                    criarPrateleira(lista);
+                    break;
                 }
-                break;
+            case 2:
+                if (strcmp(usuarioLogado.nome, USUARIO_AUTORIZADO) != 0 || strcmp(usuarioLogado.prontuario, PRONTUARIO_AUTORIZADO) != 0) {
+                    printf("Acesso negado! Você não tem permissão para realizar esta ação.\n");
+                    getch();
+                    break;
+                } else {
+                    exibirPrateleiras(lista);
+                    printf("Informe o ID da prateleira: ");
+                    scanf("%d", &id);
+                    prateleira = buscarPrateleira(lista, id);
+                    if (prateleira) {
+                        getchar();
+                        printf("Atenção: Não utilizar caractéres com acento ou cedilha.\n");
+                        printf("Nome do item: ");
+                        fgets(nome, sizeof(nome), stdin);
+                        printf("Descrição: ");
+                        fgets(descricao, sizeof(descricao), stdin);
+                        printf("Peso: ");
+                        scanf("%f", &peso);
+                        printf("Preço: ");
+                        scanf("%f", &preco);
+                        empilharItem(prateleira, nome, descricao, peso, preco, lista);
+                    } else {
+                        printf("Prateleira não encontrada!\n");
+                    }
+                    break;
+                }
             case 3:
                 exibirPrateleiras(lista);
                 printf("Informe o ID da prateleira: ");

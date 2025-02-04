@@ -13,6 +13,9 @@
 #define MAX_NOME 100
 #define MAX_PRONTUARIO 20
 
+// Inicializa a variável global
+Usuario usuarioLogado;
+
 // Função para remover espaços extras no final da string
 void removerEspacos(char *str) {
     int len = strlen(str);
@@ -96,10 +99,10 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
 }
 
 // Função principal de login
-int realizarLogin() {
-        setlocale(LC_ALL, "pt_BR.UTF-8");
+int realizarLogin(Usuario *usuarioLogado) {
+    setlocale(LC_ALL, "pt_BR.UTF-8");
     #ifdef _WIN32
-        SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
+        SetConsoleOutputCP(65001);
     #endif
 
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -121,7 +124,6 @@ int realizarLogin() {
 
     int resultado = buscarUsuario(&usuarios, &quantidade, nome, prontuario);
 
-    // Exibe a mensagem de erro ou sucesso
     if (resultado == -1) {
         return -1; // Erro de leitura
     } else if (resultado == 0) {
@@ -130,15 +132,19 @@ int realizarLogin() {
         system("cls");
         printf("USUÁRIO E/OU PRONTUÁRIO INVÁLIDO!\n");
         free(usuarios);
-#ifdef _WIN32
-        Sleep(3000); // Espera 3 segundos no Windows
-#else
-        sleep(3);    // Espera 3 segundos no Linux/Unix
-#endif
-        return 0; // Usuário ou prontuário inválido
+        #ifdef _WIN32
+            Sleep(3000);
+        #else
+            sleep(3);
+        #endif
+        return 0;
     } else {
+        // Armazena os dados do usuário logado na estrutura passada por referência
+        strcpy(usuarioLogado->nome, nome);
+        strcpy(usuarioLogado->prontuario, prontuario);
+        
         printf("Login bem-sucedido!\n");
         free(usuarios);
-        return 1; // Login bem-sucedido
+        return 1;
     }
 }

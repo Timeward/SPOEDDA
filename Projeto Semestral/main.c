@@ -4,9 +4,12 @@
 #include "userSort.h"
 #include "usuarios.h"
 #include "gondolas.h"
+#include "users.h"
 #include "locale.h"
 #include "windows.h"
 
+
+//TODO: adicionar cadastro de usuários e definicao de usuarios mestres e consumidor.
 int main(){
     setlocale(LC_ALL, "pt_BR.UTF-8"); // Configura locale para UTF-8
     #ifdef _WIN32
@@ -82,7 +85,7 @@ int main(){
                     printf("\nOpção 2 - Caixa/PDV selecionada.\n");
                     break;
                 case 3:
-                    printf("\nOpção 3 - Gerenciar Usuários selecionada.\n");
+                    menuGerenciarUsuarios();
                     break;
                 case 0:
                     printf("\nSaindo do sistema...\n");
