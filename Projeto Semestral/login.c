@@ -3,6 +3,7 @@
 #include <string.h>
 #include "login.h"
 #include "locale.h"
+#include "usuarios.h"
 
 #ifdef _WIN32
 #include <windows.h> // Para Sleep no Windows
@@ -12,9 +13,6 @@
 
 #define MAX_NOME 100
 #define MAX_PRONTUARIO 20
-
-// Inicializa a variável global
-Usuario usuarioLogado;
 
 // Função para remover espaços extras no final da string
 void removerEspacos(char *str) {
@@ -29,7 +27,7 @@ void removerEspacos(char *str) {
 int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const char *prontuario) {
     setlocale(LC_ALL, "pt_BR.UTF-8");
     #ifdef _WIN32
-    SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
+    SetConsoleOutputCP(65001);
     #endif
     FILE *file = fopen("USUARIOS.DAT", "rb");
     if (!file) {
@@ -41,13 +39,11 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
         return -1;
     }
 
-    // Conta o número de usuários no arquivo
     fseek(file, 0, SEEK_END);
     long tamanho = ftell(file);
     *quantidade = tamanho / sizeof(Usuario);
     fseek(file, 0, SEEK_SET);
 
-    // Aloca dinamicamente o array de usuários
     *usuarios = (Usuario *)malloc(*quantidade * sizeof(Usuario));
     if (*usuarios == NULL) {
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -59,32 +55,22 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
         return -1;
     }
 
-    // Lê todos os usuários do arquivo
     fread(*usuarios, sizeof(Usuario), *quantidade, file);
     fclose(file);
 
-    // Debug: Exibir os usuários lidos do arquivo
-    // printf("\n--- Usuários cadastrados ---\n");
-    // for (int i = 0; i < *quantidade; i++) {
-    //     printf("Nome: %s | Prontuário: %s\n", (*usuarios)[i].nome, (*usuarios)[i].prontuario);
-    // }
-    // printf("-----------------------------\n");
-    // Sleep(3000);
-    // Realiza a busca binária
     int esquerda = 0, direita = *quantidade - 1;
     while (esquerda <= direita) {
         int meio = esquerda + (direita - esquerda) / 2;
 
-        // Removendo espaços extras para evitar falhas na comparação
         removerEspacos((*usuarios)[meio].nome);
         removerEspacos((*usuarios)[meio].prontuario);
 
         int cmpNome = strcmp((*usuarios)[meio].nome, nome);
         if (cmpNome == 0) {
             if (strcmp((*usuarios)[meio].prontuario, prontuario) == 0) {
-                return 1; // Usuário encontrado
+                return meio; // Retorna o índice do usuário encontrado
             } else {
-                return 0; // Nome correto, mas prontuário errado
+                return -2; // Nome correto, mas prontuário errado
             }
         }
 
@@ -95,11 +81,11 @@ int buscarUsuario(Usuario **usuarios, int *quantidade, const char *nome, const c
         }
     }
 
-    return 0; // Usuário não encontrado
+    return -3; // Usuário não encontrado
 }
 
 // Função principal de login
-int realizarLogin(Usuario *usuarioLogado) {
+int realizarLogin(Usuario usuarioLogado) {
     setlocale(LC_ALL, "pt_BR.UTF-8");
     #ifdef _WIN32
         SetConsoleOutputCP(65001);
@@ -122,11 +108,11 @@ int realizarLogin(Usuario *usuarioLogado) {
     Usuario *usuarios = NULL;
     int quantidade = 0;
 
-    int resultado = buscarUsuario(&usuarios, &quantidade, nome, prontuario);
+    int indice = buscarUsuario(&usuarios, &quantidade, nome, prontuario);
 
-    if (resultado == -1) {
-        return -1; // Erro de leitura
-    } else if (resultado == 0) {
+    if (indice == -1) {
+        return -1; // Erro de leitura do arquivo
+    } else if (indice == -2 || indice == -3) {
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
         SetConsoleTextAttribute(hConsole, BACKGROUND_RED | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
         system("cls");
@@ -139,12 +125,15 @@ int realizarLogin(Usuario *usuarioLogado) {
         #endif
         return 0;
     } else {
-        // Armazena os dados do usuário logado na estrutura passada por referência
-        strcpy(usuarioLogado->nome, nome);
-        strcpy(usuarioLogado->prontuario, prontuario);
-        
+        // Armazena os dados do usuário logado usando o índice correto
+        strcpy(usuarioLogado.nome, usuarios[indice].nome);
+        strcpy(usuarioLogado.prontuario, usuarios[indice].prontuario);
+        printf("\n🔹 [DEBUG] Dentro de realizarLogin:\n");
+        printf("Nome: '%s'\n", usuarioLogado.nome);
+        printf("Prontuário: '%s'\n", usuarioLogado.prontuario);
         printf("Login bem-sucedido!\n");
         free(usuarios);
-        return 1;
+        Sleep(5000);
+        return 1;//DEBUG: possible issue here? maybe it's not returning the actual user? but it should be a global variable
     }
 }

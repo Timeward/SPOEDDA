@@ -5,12 +5,17 @@
 #include "locale.h"
 #include "windows.h"
 #include "login.h"
+#include "usuarios.h"
 
-#define USUARIO_AUTORIZADO "placeholder1"
-#define PRONTUARIO_AUTORIZADO "placeholder2"
+#define USUARIO_AUTORIZADO "Eduardo Massaru Tutui"
+#define PRONTUARIO_AUTORIZADO "SP3056945"
 
 void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
     setlocale(LC_ALL, "pt_BR.UTF-8");
+    if (lista->inicio == NULL) {
+        printf("Nenhuma prateleira para salvar. Operação ignorada.\n");
+        return;
+    }
     FILE *arquivo = fopen(nomeArquivo, "wb");
     if (!arquivo) {
         printf("Erro ao abrir arquivo para salvar os dados.\n");
@@ -56,7 +61,14 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
         return;
     }
 
-    inicializarLista(lista);
+    fseek(arquivo, 0, SEEK_END);
+    if (ftell(arquivo) == 0) {  // Arquivo vazio
+        printf("Arquivo de dados está vazio. Criando uma nova lista...\n");
+        fclose(arquivo);
+        inicializarLista(lista);
+        return;
+    }
+    rewind(arquivo);
 
     while (1) {
         Prateleira *novaPrateleira = (Prateleira *)malloc(sizeof(Prateleira));
@@ -359,6 +371,10 @@ void menuGondolas(ListaPrateleiras *lista) {
                 scanf("%d", &id);
                 prateleira = buscarPrateleira(lista, id);
                 if (prateleira) exibirItensPrateleira(prateleira);
+                break;
+            case 0:
+                salvarLista(lista, "gondolas.dat");
+                printf("Saindo e salvando dados...\n");
                 break;
         }
     } while (opcao != 0);

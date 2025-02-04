@@ -8,6 +8,9 @@
 #include "locale.h"
 #include "windows.h"
 
+// Inicializa a variável global
+Usuario usuarioLogado;
+
 
 //TODO: adicionar cadastro de usuários e definicao de usuarios mestres e consumidor.
 int main(){
@@ -36,7 +39,7 @@ int main(){
     }
 
     // Realiza o login
-    int loginResultado = realizarLogin();
+    int loginResultado = realizarLogin(usuarioLogado);
 
     // Verifica o resultado do login
     if (loginResultado == 1) {
@@ -67,7 +70,7 @@ int main(){
             printf("   3. Gerenciar Usuários\n");
             printf("   0. Sair\n");
             printf("\n   Escolha opção: ");
-
+            printf("Usuário logado: %s, Permissão: %s\n", usuarioLogado.nome, usuarioLogado.prontuario);//teste
 
             scanf("%d", &opcao);
             getchar(); // Limpa o buffer do teclado

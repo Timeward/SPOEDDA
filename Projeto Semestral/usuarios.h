@@ -7,6 +7,7 @@ typedef struct {
     char prontuario[20];
 } Usuario;
 
-
+// Declaração global (será definida em main.c)
+extern Usuario usuarioLogado;
 
 #endif
