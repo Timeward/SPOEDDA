@@ -1,1 +1,1 @@
-gcc -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 main.c login.c userSort.c gondolas.c users.c -o sistema.exe
+gcc -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 main.c login.c userSort.c gondolas.c users.c pdv.c -o sistema.exe

@@ -70,6 +70,8 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
     }
     rewind(arquivo);
 
+    inicializarLista(lista); // Garante que a lista está vazia antes de carregar
+
     while (1) {
         Prateleira *novaPrateleira = (Prateleira *)malloc(sizeof(Prateleira));
         if (!novaPrateleira) {
@@ -83,28 +85,33 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
             break;
         }
         fread(&novaPrateleira->quantidade, sizeof(int), 1, arquivo);
-        novaPrateleira->topo = NULL;
+
+        novaPrateleira->topo = NULL; // Garante que topo seja NULL por padrão
         novaPrateleira->prox = lista->inicio;
         lista->inicio = novaPrateleira;
 
-        for (int i = 0; i < novaPrateleira->quantidade; i++) {
-            Item *novoItem = (Item *)malloc(sizeof(Item));
-            if (!novoItem) {
-                printf("Erro ao alocar memória para um item.\n");
-                fclose(arquivo);
-                return;
+        if (novaPrateleira->quantidade > 0) {  // Só lê itens se houver
+            for (int i = 0; i < novaPrateleira->quantidade; i++) {
+                Item *novoItem = (Item *)malloc(sizeof(Item));
+                if (!novoItem) {
+                    printf("Erro ao alocar memória para um item.\n");
+                    fclose(arquivo);
+                    return;
+                }
+
+                fread(novoItem->nome, sizeof(char), 50, arquivo);
+                fread(novoItem->descricao, sizeof(char), 100, arquivo);
+                fread(&novoItem->peso, sizeof(float), 1, arquivo);
+                fread(&novoItem->preco, sizeof(float), 1, arquivo);
+
+                novoItem->nome[49] = '\0';
+                novoItem->descricao[99] = '\0';
+
+                novoItem->prox = novaPrateleira->topo;
+                novaPrateleira->topo = novoItem;
             }
-
-            fread(novoItem->nome, sizeof(char), 50, arquivo);
-            fread(novoItem->descricao, sizeof(char), 100, arquivo);
-            fread(&novoItem->peso, sizeof(float), 1, arquivo);
-            fread(&novoItem->preco, sizeof(float), 1, arquivo);
-
-            novoItem->nome[49] = '\0';
-            novoItem->descricao[99] = '\0';
-
-            novoItem->prox = novaPrateleira->topo;
-            novaPrateleira->topo = novoItem;
+        } else {
+            novaPrateleira->topo = NULL;  // Confirma que topo é NULL se não há itens
         }
     }
 
@@ -184,16 +191,48 @@ void desempilharItem(Prateleira *prateleira, ListaPrateleiras *lista) {
     prateleira->topo = removido->prox;
     prateleira->quantidade--;
 
-    printf("Item '%s' removido da prateleira %d\n", removido->nome, prateleira->id);
-    free(removido);
+    FILE *arquivo = fopen("carrinho.dat", "ab+"); // 'ab+' cria o arquivo se não existir
+    if (!arquivo) {
+        printf("Erro ao abrir ou criar carrinho.dat para salvar item.\n");
+        return;
+    }
+    
+    fwrite(removido->nome, sizeof(char), 50, arquivo);
+    fwrite(removido->descricao, sizeof(char), 100, arquivo);
+    fwrite(&removido->peso, sizeof(float), 1, arquivo);
+    fwrite(&removido->preco, sizeof(float), 1, arquivo);
+    
+    fclose(arquivo);
+    printf("Item '%s' removido da prateleira %d e adicionado ao carrinho.\n", removido->nome, prateleira->id);
 
-    // 🚀 Salva a lista após remover o item
+    free(removido);
     salvarLista(lista, "gondolas.dat");
+
+    // // Debug: Exibir itens no carrinho
+    // printf("\n=== ITENS NO CARRINHO ===\n");
+    // arquivo = fopen("carrinho.dat", "rb");
+    // if (!arquivo) {
+    //     printf("Erro ao abrir carrinho.dat para leitura.\n");
+    //     return;
+    // }
+
+    // Item itemLido;
+    // while (fread(itemLido.nome, sizeof(char), 50, arquivo) &&
+    //        fread(itemLido.descricao, sizeof(char), 100, arquivo) &&
+    //        fread(&itemLido.peso, sizeof(float), 1, arquivo) &&
+    //        fread(&itemLido.preco, sizeof(float), 1, arquivo)) {
+    //         printf("Nome: %s | Descrição: %s | Peso: %.2f kg | Preço: R$ %.2f\n",
+    //            itemLido.nome, itemLido.descricao, itemLido.peso, itemLido.preco);
+    //         getch();
+    // }
+
+    fclose(arquivo);
+    printf("=========================\n");
 }
 
 // Exibe todas as prateleiras disponíveis
 void exibirPrateleiras(ListaPrateleiras *lista) {
-        SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
+    SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
     Prateleira *atual = lista->inicio;
     if (atual == NULL) {
         printf("Nenhuma prateleira cadastrada.\n");
