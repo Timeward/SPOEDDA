@@ -7,6 +7,7 @@
 #include "users.h"
 #include "locale.h"
 #include "windows.h"
+#include "pdv.h"
 
 // Inicializa a variável global
 Usuario usuarioLogado;
