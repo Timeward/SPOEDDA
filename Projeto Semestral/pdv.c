@@ -123,18 +123,23 @@ void processarCaixa(FilaCaixa *fila) {
         return;
     }
 
-    printf("\n============= NOTA FISCAL =============\n");
-    printf("Produto                     | Preço (R$)\n");
-    printf("----------------------------------------\n");
+    printf("\n==================== NOTA FISCAL ====================\n");
+    printf("Produto              | Descrição           | Peso (kg) | Preço (R$)\n");
+    printf("------------------------------------------------------\n");
 
     while (fread(&itemArquivo, sizeof(ItemArquivo), 1, arquivoSaida) == 1) {
         removerQuebraDeLinha(itemArquivo.nome);
-        printf("%-28s | %.2f\n", itemArquivo.nome, itemArquivo.preco);
+        removerQuebraDeLinha(itemArquivo.descricao);
+        printf("%-20s | %-18s | %8.2f | %10.2f\n", 
+               itemArquivo.nome, 
+               itemArquivo.descricao, 
+               itemArquivo.peso, 
+               itemArquivo.preco);
         total += itemArquivo.preco;
     }
 
-    printf("----------------------------------------\n");
-    printf("TOTAL                       | %10.2f\n", total);
+    printf("------------------------------------------------------\n");
+    printf("TOTAL                                       | %10.2f\n", total);
 
     fclose(arquivoSaida);
 
