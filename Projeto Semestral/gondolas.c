@@ -27,22 +27,15 @@ void salvarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
         fwrite(&prateleiraAtual->id, sizeof(int), 1, arquivo);
         fwrite(&prateleiraAtual->quantidade, sizeof(int), 1, arquivo);
 
-        Item *itemAtual = prateleiraAtual->topo;
+        ItemMemoria *itemAtual = prateleiraAtual->topo;
         while (itemAtual) {
-            // printf("Nome antes de salvar: %s\n", itemAtual->nome);
-            // for (int i = 0; i < strlen(itemAtual->nome); i++) {
-            //     printf("%02X ", (unsigned char)itemAtual->nome[i]);  // Mostra os valores em hexadecimal
-            // }
-            printf("\n");
-            fwrite(itemAtual->nome, sizeof(char), 50, arquivo);  // Nome do item
-            fwrite(itemAtual->descricao, sizeof(char), 100, arquivo); // Descrição
-            fwrite(&itemAtual->peso, sizeof(float), 1, arquivo); // Peso
-            fwrite(&itemAtual->preco, sizeof(float), 1, arquivo); // Preço
+            ItemArquivo itemSalvar;
+            strcpy(itemSalvar.nome, itemAtual->nome);
+            strcpy(itemSalvar.descricao, itemAtual->descricao);
+            itemSalvar.peso = itemAtual->peso;
+            itemSalvar.preco = itemAtual->preco;
 
-            // printf("Nome salvo: %s\n", itemAtual->nome);//TESTE
-            // printf("Descrição salva: %s\n", itemAtual->descricao);//TESTE
-            // getch();
-
+            fwrite(&itemSalvar, sizeof(ItemArquivo), 1, arquivo);
             itemAtual = itemAtual->prox;
         }
 
@@ -70,7 +63,7 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
     }
     rewind(arquivo);
 
-    inicializarLista(lista); // Garante que a lista está vazia antes de carregar
+    inicializarLista(lista);
 
     while (1) {
         Prateleira *novaPrateleira = (Prateleira *)malloc(sizeof(Prateleira));
@@ -82,43 +75,51 @@ void carregarLista(ListaPrateleiras *lista, const char *nomeArquivo) {
 
         if (fread(&novaPrateleira->id, sizeof(int), 1, arquivo) != 1) {
             free(novaPrateleira);
-            break;
+            break;  // Fim do arquivo
         }
         fread(&novaPrateleira->quantidade, sizeof(int), 1, arquivo);
 
-        novaPrateleira->topo = NULL; // Garante que topo seja NULL por padrão
+        novaPrateleira->topo = NULL;
         novaPrateleira->prox = lista->inicio;
         lista->inicio = novaPrateleira;
 
-        if (novaPrateleira->quantidade > 0) {  // Só lê itens se houver
-            for (int i = 0; i < novaPrateleira->quantidade; i++) {
-                Item *novoItem = (Item *)malloc(sizeof(Item));
-                if (!novoItem) {
-                    printf("Erro ao alocar memória para um item.\n");
-                    fclose(arquivo);
-                    return;
-                }
-
-                fread(novoItem->nome, sizeof(char), 50, arquivo);
-                fread(novoItem->descricao, sizeof(char), 100, arquivo);
-                fread(&novoItem->peso, sizeof(float), 1, arquivo);
-                fread(&novoItem->preco, sizeof(float), 1, arquivo);
-
-                novoItem->nome[49] = '\0';
-                novoItem->descricao[99] = '\0';
-
-                novoItem->prox = novaPrateleira->topo;
-                novaPrateleira->topo = novoItem;
-            }
-        } else {
-            novaPrateleira->topo = NULL;  // Confirma que topo é NULL se não há itens
+        // Criando um array temporário para armazenar os itens
+        ItemArquivo *itensTemp = (ItemArquivo *)malloc(novaPrateleira->quantidade * sizeof(ItemArquivo));
+        if (!itensTemp) {
+            printf("Erro ao alocar memória para os itens temporários.\n");
+            fclose(arquivo);
+            return;
         }
+
+        // Lendo os itens do arquivo para o array temporário
+        fread(itensTemp, sizeof(ItemArquivo), novaPrateleira->quantidade, arquivo);
+
+        // Empilhando os itens na ordem correta (LIFO)
+        for (int i = novaPrateleira->quantidade - 1; i >= 0; i--) {
+            ItemMemoria *novoItem = (ItemMemoria *)malloc(sizeof(ItemMemoria));
+            if (!novoItem) {
+                printf("Erro ao alocar memória para um item.\n");
+                free(itensTemp);
+                fclose(arquivo);
+                return;
+            }
+
+            strcpy(novoItem->nome, itensTemp[i].nome);
+            strcpy(novoItem->descricao, itensTemp[i].descricao);
+            novoItem->peso = itensTemp[i].peso;
+            novoItem->preco = itensTemp[i].preco;
+
+            // Empilhar corretamente (LIFO)
+            novoItem->prox = novaPrateleira->topo;
+            novaPrateleira->topo = novoItem;
+        }
+
+        free(itensTemp);  // Libera a memória do array temporário
     }
 
     fclose(arquivo);
     printf("Dados carregados com sucesso!\n");
 }
-
 // Inicializa a lista de prateleiras
 void inicializarLista(ListaPrateleiras *lista) {
     lista->inicio = NULL;
@@ -160,7 +161,7 @@ void empilharItem(Prateleira *prateleira, const char *nome, const char *descrica
         return;
     }
 
-    Item *novo = (Item *)malloc(sizeof(Item));
+    ItemMemoria *novo = (ItemMemoria *)malloc(sizeof(ItemMemoria));
     if (novo == NULL) {
         printf("Erro ao alocar memória para o item!\n");
         return;
@@ -175,8 +176,6 @@ void empilharItem(Prateleira *prateleira, const char *nome, const char *descrica
     prateleira->quantidade++;
 
     printf("Item '%s' adicionado à prateleira %d\n", nome, prateleira->id);
-
-    // 🚀 Aqui está a chamada correta
     salvarLista(lista, "gondolas.dat");
 }
 
@@ -187,49 +186,30 @@ void desempilharItem(Prateleira *prateleira, ListaPrateleiras *lista) {
         return;
     }
 
-    Item *removido = prateleira->topo;
+    ItemMemoria *removido = prateleira->topo;
     prateleira->topo = removido->prox;
     prateleira->quantidade--;
 
-    FILE *arquivo = fopen("carrinho.dat", "ab+"); // 'ab+' cria o arquivo se não existir
+    FILE *arquivo = fopen("carrinho.dat", "ab+");
     if (!arquivo) {
-        printf("Erro ao abrir ou criar carrinho.dat para salvar item.\n");
+        printf("Erro ao abrir carrinho.dat para salvar item.\n");
         return;
     }
-    
-    fwrite(removido->nome, sizeof(char), 50, arquivo);
-    fwrite(removido->descricao, sizeof(char), 100, arquivo);
-    fwrite(&removido->peso, sizeof(float), 1, arquivo);
-    fwrite(&removido->preco, sizeof(float), 1, arquivo);
-    
+
+    ItemArquivo itemSalvar;
+    strcpy(itemSalvar.nome, removido->nome);
+    strcpy(itemSalvar.descricao, removido->descricao);
+    itemSalvar.peso = removido->peso;
+    itemSalvar.preco = removido->preco;
+
+    fwrite(&itemSalvar, sizeof(ItemArquivo), 1, arquivo);
     fclose(arquivo);
+
     printf("Item '%s' removido da prateleira %d e adicionado ao carrinho.\n", removido->nome, prateleira->id);
 
     free(removido);
     salvarLista(lista, "gondolas.dat");
-
-    // // Debug: Exibir itens no carrinho
-    // printf("\n=== ITENS NO CARRINHO ===\n");
-    // arquivo = fopen("carrinho.dat", "rb");
-    // if (!arquivo) {
-    //     printf("Erro ao abrir carrinho.dat para leitura.\n");
-    //     return;
-    // }
-
-    // Item itemLido;
-    // while (fread(itemLido.nome, sizeof(char), 50, arquivo) &&
-    //        fread(itemLido.descricao, sizeof(char), 100, arquivo) &&
-    //        fread(&itemLido.peso, sizeof(float), 1, arquivo) &&
-    //        fread(&itemLido.preco, sizeof(float), 1, arquivo)) {
-    //         printf("Nome: %s | Descrição: %s | Peso: %.2f kg | Preço: R$ %.2f\n",
-    //            itemLido.nome, itemLido.descricao, itemLido.peso, itemLido.preco);
-    //         getch();
-    // }
-
-    fclose(arquivo);
-    printf("=========================\n");
 }
-
 // Exibe todas as prateleiras disponíveis
 void exibirPrateleiras(ListaPrateleiras *lista) {
     SetConsoleOutputCP(65001); // Define código de página UTF-8 no Windows
@@ -244,6 +224,7 @@ void exibirPrateleiras(ListaPrateleiras *lista) {
         printf("Prateleira ID: %d | Itens: %d/5\n", atual->id, atual->quantidade);
         atual = atual->prox;
     }
+    getch();
 }
 
 // Exibe os itens de uma prateleira específica
@@ -254,7 +235,7 @@ void exibirItensPrateleira(Prateleira *prateleira) {
     }
 
     printf("\nItens na Prateleira %d:\n", prateleira->id);
-    Item *atual = prateleira->topo;
+    ItemMemoria *atual = prateleira->topo;
     while (atual != NULL) {
         printf("- %s | %s | Peso: %.2f kg | Preço: R$ %.2f\n",
                atual->nome, atual->descricao, atual->peso, atual->preco);
@@ -271,7 +252,7 @@ void limparLista(ListaPrateleiras *lista) {
         lista->inicio = atual->prox;
 
         while (atual->topo != NULL) {
-            Item *removido = atual->topo;
+            ItemMemoria *removido = atual->topo;
             atual->topo = removido->prox;
             free(removido);
         }

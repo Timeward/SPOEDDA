@@ -5,19 +5,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Definição da estrutura de um item
-typedef struct Item {
+// Estrutura usada na memória (com ponteiro para a lista)
+typedef struct ItemMemoria {
     char nome[50];
     char descricao[100];
     float peso;
     float preco;
-    struct Item *prox;
-} Item;
+    struct ItemMemoria *prox; // Apenas na memória
+} ItemMemoria;
+
+// Estrutura usada para salvar no arquivo (sem ponteiro)
+typedef struct {
+    char nome[50];
+    char descricao[100];
+    float peso;
+    float preco;
+} ItemArquivo;
 
 // Definição da estrutura de uma prateleira (Pilha)
 typedef struct Prateleira {
     int id;  // Identificador único da prateleira
-    Item *topo;
+    ItemMemoria *topo;
     int quantidade;
     struct Prateleira *prox;
 } Prateleira;

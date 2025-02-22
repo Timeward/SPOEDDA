@@ -84,9 +84,12 @@ int main(){
                     limparLista(&lista);
                     break;
                 }
-                case 2:
-                    printf("\nOpção 2 - Caixa/PDV selecionada.\n");
+                case 2:{
+                    FilaCaixa *fila;
+                    inicializarFila(&fila);
+                    exibirTelaPDV(&fila);
                     break;
+                }
                 case 3:
                     menuGerenciarUsuarios();
                     break;
